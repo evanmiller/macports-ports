@@ -71,6 +71,13 @@ if { ${os.platform} eq "darwin" && ${os.major} < 13 } {
     configure.args-append   --disable-xcode-checks
 }
 
+platform darwin 8 {
+    patchfiles-append    patch-ppc.diff
+    depends_build-append port:gmake
+    build.cmd            gmake
+    configure.cppflags-append -D__DARWIN_UNIX03
+}
+
 build.env-append    SHELL=/bin/bash
 build.dir           ${worksrcpath}/js/src/obj
 destroot.dir        ${worksrcpath}/js/src/obj
@@ -107,7 +114,7 @@ if {${universal_possible} && [variant_isset universal]} {
         configure.args-append \
             --host=i686-apple-${os.platform}${os.major} \
             --target=i686-apple-${os.platform}${os.major}
-    } elseif {${build_arch} eq "x86_64"} {
+    } elseif {${build_arch} in "x86_64 ppc ppc64"} {
         configure.args-append \
             --host=${build_arch}-apple-${os.platform}${os.major} \
             --target=${build_arch}-apple-${os.platform}${os.major}
