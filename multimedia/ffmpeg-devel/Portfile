@@ -248,13 +248,6 @@ post-destroot {
     }
 }
 
-platform powerpc {
-    # absence of altivec is not automatically detected
-    if {[catch {sysctl hw.vectorunit} result] || $result == 0} {
-        configure.args-append --disable-altivec
-    }
-}
-
 platform darwin 8 {
     post-patch {
         reinplace "s:,-compatibility_version,$\(LIBMAJOR\)::" ${worksrcpath}/configure
@@ -284,6 +277,11 @@ if {${universal_possible} && [variant_isset universal]} {
         depends_build-append port:nasm
         configure.args-append --enable-x86asm
     }
+}
+
+variant no_simd description {Disable AltiVec on PowerPC platforms} {
+    # absence of altivec is not automatically detected
+    configure.args-append --disable-altivec
 }
 
 variant x11 {

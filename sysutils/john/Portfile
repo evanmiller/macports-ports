@@ -51,16 +51,16 @@ switch ${configure.build_arch} {
         }
     }
     ppc {
-        # Use altivec if available
-        if {![catch {sysctl hw.vectorunit} result] && $result == 1} {
-            build.target-append macosx-ppc32-altivec
-        } else {
-            build.target-append macosx-ppc32
-        }
+        build.target-append macosx-ppc32-altivec
     }
     ppc64 {
         build.target-append macosx-ppc64
     }
+}
+
+variant no_simd description {Disable AltiVec on PowerPC platforms} {
+    build.target-delete macosx-ppc32-altivec
+    build.target-append macosx-ppc32
 }
 
 destroot {
