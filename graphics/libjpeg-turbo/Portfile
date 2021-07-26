@@ -47,7 +47,17 @@ if {${universal_possible} && [variant_isset universal]} {
     depends_build-append port:nasm
     configure.env       ASM_NASM=${prefix}/bin/nasm
 }
-configure.args      -DWITH_JPEG8=1
+configure.args      -DWITH_JPEG8=ON
+
+variant simd description "Enable SIMD instructions" {
+    configure.args-append   -DREQUIRE_SIMD=ON
+}
+if {[variant_exists simd] && ![variant_isset simd]} {
+    configure.args-append   -DWITH_SIMD=OFF
+}
+if {![catch {sysctl hw.vectorunit} result] && $result > 0} {
+    default_variants +simd
+}
 
 variant java description "Add Java support" {
     PortGroup           java 1.0
