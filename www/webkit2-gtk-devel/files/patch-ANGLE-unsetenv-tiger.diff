@@ -1,0 +1,11 @@
+--- Source/ThirdParty/ANGLE/src/common/system_utils_posix.cpp.orig
++++ Source/ThirdParty/ANGLE/src/common/system_utils_posix.cpp
+@@ -86,7 +86,7 @@
+ 
+ bool UnsetEnvironmentVar(const char *variableName)
+ {
+-    return (unsetenv(variableName) == 0);
++    unsetenv(variableName); return true;
+ }
+ 
+ bool SetEnvironmentVar(const char *variableName, const char *value)

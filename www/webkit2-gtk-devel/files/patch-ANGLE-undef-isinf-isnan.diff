@@ -1,0 +1,12 @@
+--- Source/ThirdParty/ANGLE/src/compiler/translator/SymbolTable_autogen.cpp.orig
++++ Source/ThirdParty/ANGLE/src/compiler/translator/SymbolTable_autogen.cpp
+@@ -18,6 +18,9 @@
+ #include "compiler/translator/SymbolTable.h"
+ #include "compiler/translator/tree_util/BuiltIn.h"
+ 
++#undef isinf
++#undef isnan
++
+ namespace sh
+ {
+ using Resources = ShBuiltInResources;
