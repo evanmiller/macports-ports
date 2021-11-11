@@ -28,5 +28,9 @@ post-patch {
     copy -force ${filespath}/project.pbxproj ${worksrcpath}/Freecell.xcodeproj/project.pbxproj
 }
 
+destroot {
+    file copy ${worksrcpath}/build/Deployment/Freecell.app ${destroot}${applications_dir}/Freecell.app
+}
+
 livecheck.type          regex
 livecheck.regex         "${name} (\\d+(?:\\.\\d+)*)"
