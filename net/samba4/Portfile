@@ -1,14 +1,18 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 PortSystem          1.0
+PortGroup           legacysupport 1.1
+
+# O_CLOEXEC
+legacysupport.newest_darwin_requires_legacy 10
 
 name                samba4
 conflicts           samba3
-version             4.14.7
-revision            1
-checksums           rmd160  732a018b5b97e9efc91efd1b2d3540c23aec1dca \
-                    sha256  6f50353f9602aa20245eb18ceb00e7e5ec793df0974aebd5254c38f16d8f1906 \
-                    size 18668592
+version             4.15.3
+revision            0
+checksums           rmd160  0d4a2443d6e3f53268389e3504ef97765ac8b9be \
+                    sha256  519399404391550345846768ea4dd0fe7fcb04e20c2b891b5eeb02e5554137db \
+                    size    19272345
 
 categories          net
 platforms           darwin
@@ -18,7 +22,7 @@ description         SMB/CIFS server and client
 long_description    Samba is an software suite that provides seamless file \
                     and print services to SMB/CIFS clients.
 
-homepage            http://www.samba.org/
+homepage            https://www.samba.org/
 master_sites        https://download.samba.org/pub/samba/stable
 distname            samba-${version}
 
@@ -38,29 +42,6 @@ depends_lib         port:cctools \
                     port:zlib
 
 patch.pre_args      -p1
-
-platform darwin {
-    # fix missing header
-    patchfiles-append \
-                    patch-fix-debug.diff
-
-    # patch "get_user_groups: failed to get the unix group list" on
-    # macOS
-    #
-    # Samba fails on macOS when current user belongs to more than 16
-    # groups.
-    #
-    # The 16 group limit is returned by sysconf when asked for
-    # _SC_NGROUPS_MAX; this is apparently due to OS X's nested groups;
-    # while the call to getgrouplist returns a flat (not nested) group
-    # list. getgrouplist will happily return the first 16 groups but
-    # still return a -1 return code, indicating failure. Hence the
-    # strange maximum of 16 groups on OS X.
-    #
-    # https://github.com/Homebrew/legacy-homebrew/issues/5954
-    patchfiles-append \
-                    patch-macos-grouplimit.diff
- }
 
 # patch to disable building documentation on MacOS
 # this enables us to have a working samba4 port without docs,
