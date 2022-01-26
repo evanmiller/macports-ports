@@ -100,13 +100,6 @@ post-destroot   {
     ln -s ../lib/erlang/lib/${erl_interface_dir}/bin/erl_call ${destroot}${prefix}/bin/erl_call
 }
 
-platform darwin 10 {
-    # 10.6 (and 10.6.1) has a bad bug related to using dlopen in a thread.
-    # rdar://7209349 - http://www.openradar.appspot.com/7209349
-    # This is a workaround.
-    patchfiles-append           patch-erts_emulator_sys_unix_ddll.c.diff
-}
-
 platform darwin {
     if {${configure.build_arch} in [list arm64 ppc64 x86_64]} {
         configure.args-append   --enable-darwin-64bit
