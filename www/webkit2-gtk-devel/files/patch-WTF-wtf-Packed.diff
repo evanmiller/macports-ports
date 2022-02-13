@@ -1,0 +1,10 @@
+--- Source/WTF/wtf/Packed.h.orig	2022-02-13 12:55:16.000000000 -0500
++++ Source/WTF/wtf/Packed.h	2022-02-13 12:55:28.000000000 -0500
+@@ -34,6 +34,7 @@
+ #include <wtf/UnalignedAccess.h>
+ 
+ #if OS(DARWIN)
++#include <mach/mach_types.h>
+ #include <mach/vm_param.h>
+ #endif
+ 

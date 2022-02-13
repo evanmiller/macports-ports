@@ -1,0 +1,43 @@
+--- Source/WTF/wtf/OSLogPrintStream.cpp.orig	2022-02-13 14:25:33.000000000 -0500
++++ Source/WTF/wtf/OSLogPrintStream.cpp	2022-02-13 14:26:16.000000000 -0500
+@@ -28,7 +28,7 @@
+ 
+ namespace WTF {
+ 
+-#if OS(DARWIN)
++#if OS(DARWIN) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 101000
+ 
+ OSLogPrintStream::OSLogPrintStream(os_log_t log, os_log_type_t logType)
+     : m_log(log)
+--- Source/WTF/wtf/OSLogPrintStream.h.orig	2022-02-13 14:25:27.000000000 -0500
++++ Source/WTF/wtf/OSLogPrintStream.h	2022-02-13 14:26:11.000000000 -0500
+@@ -25,7 +25,7 @@
+ 
+ #pragma once
+ 
+-#if OS(DARWIN)
++#if OS(DARWIN) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 101000
+ 
+ #include <wtf/Lock.h>
+ #include <wtf/PrintStream.h>
+--- Source/ThirdParty/ANGLE/src/common/debug.cpp.orig	2022-02-13 16:25:21.000000000 -0500
++++ Source/ThirdParty/ANGLE/src/common/debug.cpp	2022-02-13 16:26:06.000000000 -0500
+@@ -21,7 +21,7 @@
+ #    include <android/log.h>
+ #endif
+ 
+-#if defined(ANGLE_PLATFORM_APPLE)
++#if defined(ANGLE_PLATFORM_APPLE) && __has_include(<os/log.h>)
+ #    include <os/log.h>
+ #endif
+ 
+@@ -259,8 +259,7 @@
+         }
+         __android_log_print(android_priority, "ANGLE", "%s: %s\n", LogSeverityName(severity),
+                             str.c_str());
+-#elif defined(ANGLE_PLATFORM_APPLE)
+-        if (__builtin_available(macOS 10.12, iOS 10.0, *))
++#elif defined(ANGLE_PLATFORM_APPLE) && __has_include(<os/log.h>)
+         {
+             os_log_type_t apple_log_type = OS_LOG_TYPE_DEFAULT;
+             switch (severity)

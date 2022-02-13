@@ -1,0 +1,13 @@
+--- Source/WTF/wtf/FastMalloc.cpp.orig	2022-02-13 13:07:47.000000000 -0500
++++ Source/WTF/wtf/FastMalloc.cpp	2022-02-13 13:08:14.000000000 -0500
+@@ -153,6 +153,10 @@
+ #include <malloc.h>
+ #endif
+ 
++#if OS(DARWIN)
++#include <malloc/malloc.h>
++#endif
++
+ namespace WTF {
+ 
+ bool isFastMallocEnabled()

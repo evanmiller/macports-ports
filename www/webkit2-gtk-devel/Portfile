@@ -7,14 +7,18 @@
 PortSystem          1.0
 PortGroup           active_variants 1.1
 PortGroup           cmake 1.1
+PortGroup           legacysupport 1.1
 
-compiler.cxx_standard 2017
+# TARGET_OS_TV etc
+legacysupport.newest_darwin_requires_legacy 13
+
+compiler.cxx_standard 2020
 cmake.generator     Ninja
 
 name                webkit2-gtk-devel
 conflicts           webkit2-gtk
-version             2.27.3
-revision            3
+version             2.35.3
+revision            0
 
 description         Apple's WebKit2 HTML rendering library for GTK+3
 long_description    ${description}
@@ -30,9 +34,9 @@ distname            webkitgtk-${version}
 
 dist_subdir         webkit-gtk
 
-checksums           rmd160  b297a1aaae881d702d4b95f15fffc261c2608087 \
-                    sha256  5390d0b41957834202893887f1ac04e3264b6a3d98160d4166e3c8c16bdb7492 \
-                    size    20912420
+checksums           rmd160  a8c20f9d45bfba6461080bbd2579898a8c9ccfa0 \
+                    sha256  4c797dcfe1cb8460baf8058b37077764217226e8577f3b5bbc5f15cd673a499a \
+                    size    26789900
 
 depends_build-append \
                     port:gperf \
@@ -48,6 +52,7 @@ depends_lib-append  port:atk \
                     port:flex \
                     port:fontconfig \
                     port:freetype \
+                    port:lcms2 \
                     port:enchant2 \
                     port:geoclue2 \
                     path:lib/pkgconfig/glib-2.0.pc:glib2 \
@@ -60,12 +65,15 @@ depends_lib-append  port:atk \
                     path:lib/pkgconfig/harfbuzz-icu.pc:harfbuzz-icu \
                     port:hyphen \
                     port:icu \
+                    path:include/turbojpeg.h:libjpeg-turbo \
+                    port:libgcrypt \
                     port:libnotify \
                     port:libpng \
                     port:libsecret \
                     port:libsoup \
                     port:libxml2 \
                     port:libxslt \
+                    port:openjpeg \
                     port:sqlite3 \
                     port:webp \
                     port:woff2 \
@@ -73,10 +81,9 @@ depends_lib-append  port:atk \
 
 
 # 1. add missing JavaScriptCore include directory used only on Apple webkit builds
-# 2. don't copy the ICU includes into the source tree
-# 3. add missing WebCore include directory used only on Apple webkit builds
-# 4. add a missing Apple-only header found in the WebKit project
-# 5. change some int64_t to gint64 to stop typedef errors in gstreamer
+# 2. add missing WebCore include directory used only on Apple webkit builds
+# 3. add a missing Apple-only header found in the WebKit project
+# 4. change some int64_t to gint64 to stop typedef errors in gstreamer
 patchfiles-append   patch-webkit2gtk-macports.diff
 
 # and a few more for webkit2-gtk-2.27.2
@@ -101,15 +108,23 @@ patchfiles-append    patch-sources-gtk.diff
 # patch web process to add call to SetActivationPolicyProhibited
 patchfiles-append    patch-web-process-main.diff
 
+# error: no matching constructor for initialization of 'std::filesystem::path'
+patchfiles-append    patch-filesystem-path.diff
+
 # it is preferred to use the WebKit built in bmalloc if it builds on a given os.
 # it has improved security features, but not all systems can build it at present.
 
 configure.args-append \
     -DPORT=GTK \
+    -DENABLE_GAMEPAD=OFF \
     -DENABLE_INTROSPECTION=ON \
+    -DENABLE_JOURNALD_LOG=OFF \
     -DENABLE_MINIBROWSER=OFF \
     -DENABLE_VIDEO=ON \
-    -DUSE_SYSTEM_MALLOC=OFF
+    -DUSE_APPLE_ICU=OFF \
+    -DUSE_SOUP2=ON \
+    -DUSE_SYSTEM_MALLOC=OFF \
+    -DUSE_WPE_RENDERER=OFF
 
 pre-configure {
     if {![variant_isset quartz] && ![variant_isset x11]} {
@@ -135,12 +150,12 @@ variant quartz conflicts x11 {
     configure.args-append \
         -DENABLE_QUARTZ_TARGET=ON \
         -DENABLE_X11_TARGET=OFF \
-        -DENABLE_OPENGL=OFF
+        -DUSE_OPENGL_OR_ES=OFF
 
 # OPENGL does not work with +quartz, eg: https://trac.macports.org/ticket/52495
 # OPENGL must be explicitly turned off, otherwise GLX is found, but X11 is not, and:
 # CMake Error at Source/cmake/OptionsGTK.cmake:280 (message):
-#  Either GLX or EGL is needed for ENABLE_OPENGL.
+#  Either GLX or EGL is needed.
 
 }
 
@@ -150,7 +165,7 @@ variant x11 conflicts quartz {
     configure.args-append \
         -DENABLE_QUARTZ_TARGET=OFF \
         -DENABLE_X11_TARGET=ON \
-        -DENABLE_OPENGL=ON
+        -DUSE_OPENGL_OR_ES=ON
 
     depends_lib-append \
         port:mesa \
@@ -177,7 +192,13 @@ if {${os.platform} eq "darwin" && ${os.major} <= 16} {
     configure.args-replace -DUSE_SYSTEM_MALLOC=OFF -DUSE_SYSTEM_MALLOC=ON
     patchfiles-append       patch-ramsize.diff
 
-    # Source/WTF/wtf/unix/CPUTimeUnix.cpp : add back a previous Darwin compat version
+    # error: use of undeclared identifier 'malloc_good_size'
+    patchfiles-append       patch-fastmalloc.diff
+
+    # error: no member named 'getMSBSetConstexpr' in namespace 'WTF'
+    patchfiles-append       patch-gigacage.diff
+
+    # Source/WTF/wtf/posix/CPUTimePOSIX.cpp : add back a previous Darwin compat version
      patchfiles-append      patch-source-wtf-wtf-unix-cputimeunix-cpp-darwin-version-restore.diff
 
     # some Darwin versions don't have MAP_JIT; only use it if available
@@ -204,6 +225,15 @@ if {${os.platform} eq "darwin" && ${os.major} <= 16} {
     # https://bugs.webkit.org/show_bug.cgi?id=157554
     patchfiles-append       patch-WTF-wtf-Randomdevice.diff
 
+    # error: use of undeclared identifier 'mach_vm_offset_t'
+    patchfiles-append       patch-WTF-wtf-Packed.diff
+
+    # fatal error: 'wtf/spi/cocoa/MachVMSPI.h' file not found
+    patchfiles-append       patch-WTF-wtf-WTFConfig.diff
+
+    # fatal error: 'os/log.h' file not found
+    patchfiles-append       patch-os-log.diff
+    
     # disable veclib on 10.7 and 10.8. There is a definition for
     # class complex<> in the vForce.h header that collides with libc++
     # if anyone has a more elegant fix for this, please volunteer it
@@ -211,21 +241,27 @@ if {${os.platform} eq "darwin" && ${os.major} <= 16} {
         patchfiles-append       patch-webcore-platform-audio-directconvolver-disable-veclib.diff
     }
 
-    # there is a missing header that manifests on 10.7 and less
-    patchfiles-append patch-webkit2gtk-source-javascriptcore-jit-executableallocator-missingfcntl-h-older-systems.diff
+    # mach_approximate_time introduced in 10.9 (add to legacysupport?)
+    if {${os.major} < 13} {
+        configure.cxxflags-append -Dmach_approximate_time=mach_absolute_time
+    }
+
+    # documented in vm_statistics.h but not actually defined on Snow Leopard
+    if {${os.major} < 11} {
+        configure.cxxflags-append -DVM_FLAGS_OVERWRITE=0x4000
+    }
 
     # add dep for newer ruby and spec this for build
     # https://trac.macports.org/ticket/52016
-    depends_build-append    port:ruby25
-    configure.args-append   -DRUBY_EXECUTABLE=${prefix}/bin/ruby2.5
+    depends_build-append    port:ruby27
+    configure.args-append   -DRUBY_EXECUTABLE=${prefix}/bin/ruby2.7
 
     # fix missing PRId64 definitions on systems
     # that don't define __STDC_FORMAT_MACROS by default
     # https://bugs.webkit.org/show_bug.cgi?id=156596
     # https://trac.macports.org/ticket/52016
-    # also added defn for TARGET_OS_IOS to avoid innumerable warnings
     patchfiles-append patch-snowleopard-cmakelists-stdcformatmacros.diff
-    
+
     # special case: fix build on 10.6 with macports-libstdc++
     # contents of snowmath.h should someday become part of gcc6 cmath
     # TODO: remove this?

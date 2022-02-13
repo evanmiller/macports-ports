@@ -1,16 +1,20 @@
-diff --git Source/WTF/wtf/posix/OSAllocatorPOSIX.cpp Source/WTF/wtf/posix/OSAllocatorPOSIX.cpp
-index a5eb8d44..051c439e 100644
---- Source/WTF/wtf/posix/OSAllocatorPOSIX.cpp
-+++ Source/WTF/wtf/posix/OSAllocatorPOSIX.cpp
-@@ -72,9 +72,11 @@ void* OSAllocator::reserveAndCommit(size_t bytes, Usage usage, bool writable, bo
+--- Source/WTF/wtf/posix/OSAllocatorPOSIX.cpp.orig	2022-02-01 05:31:54.000000000 -0500
++++ Source/WTF/wtf/posix/OSAllocatorPOSIX.cpp	2022-02-13 12:12:04.000000000 -0500
+@@ -35,7 +35,7 @@
+ #if ENABLE(JIT_CAGE)
+ #include <WebKitAdditions/JITCageAdditions.h>
+ #else // ENABLE(JIT_CAGE)
+-#if OS(DARWIN)
++#if OS(DARWIN) && defined(MAP_JIT)
+ #define MAP_EXECUTABLE_FOR_JIT MAP_JIT
+ #define MAP_EXECUTABLE_FOR_JIT_WITH_JIT_CAGE MAP_JIT
+ #else // OS(DARWIN)
+@@ -45,7 +45,7 @@
+ #endif // ENABLE(JIT_CAGE)
  
-     int flags = MAP_PRIVATE | MAP_ANON;
  #if OS(DARWIN)
-+#if defined(MAP_JIT)
-     if (executable)
-         flags |= MAP_JIT;
+-#include <wtf/spi/cocoa/MachVMSPI.h>
++#include <mach/vm_prot.h>
  #endif
-+#endif
  
- #if OS(DARWIN)
-     int fd = usage;
+ namespace WTF {

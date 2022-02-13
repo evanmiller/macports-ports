@@ -1,9 +1,9 @@
 --- Source/WebKit/WebProcess/gtk/WebProcessMainGtk.cpp.orig	2020-07-21 13:09:21.000000000 +0200
 +++ Source/WebKit/WebProcess/gtk/WebProcessMainGtk.cpp	2020-07-21 15:27:56.000000000 +0200
 @@ -33,6 +33,7 @@
- #include <gtk/gtk.h>
+ #include "WebProcess.h"
+ #include <WebCore/GtkVersioning.h>
  #include <libintl.h>
- #include <libsoup/soup.h>
 +#include "NSApplicationActivationPolicy.h"
  
  #if PLATFORM(X11)

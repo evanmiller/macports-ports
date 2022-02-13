@@ -1,10 +1,8 @@
-diff --git Source/WTF/wtf/unix/CPUTimeUnix.cpp Source/WTF/wtf/unix/CPUTimeUnix.cpp
-index 27990893..fe279865 100644
---- Source/WTF/wtf/unix/CPUTimeUnix.cpp
-+++ Source/WTF/wtf/unix/CPUTimeUnix.cpp
-@@ -26,6 +26,68 @@
+--- Source/WTF/wtf/posix/CPUTimePOSIX.cpp
++++ Source/WTF/wtf/posix/CPUTimePOSIX.cpp
+@@ -26,6 +26,66 @@
  #include "config.h"
- #include "CPUTime.h"
+ #include <wtf/CPUTime.h>
  
 +#if OS(DARWIN)
 +#import <mach/mach.h>
@@ -13,8 +11,6 @@ index 27990893..fe279865 100644
 +#import <mach/task_info.h>
 +#import <mach/thread_info.h>
 +#import <sys/time.h>
-+
-+#include <wtf/Optional.h>
 +
 +namespace WTF {
 +
@@ -28,14 +24,14 @@ index 27990893..fe279865 100644
 +    return result;
 +}
 +
-+Optional<CPUTime> CPUTime::get()
++std::optional<CPUTime> CPUTime::get()
 +{
 +    // Account for current threads.
 +    task_thread_times_info threadInfoData;
 +    mach_msg_type_number_t threadInfoCount = TASK_THREAD_TIMES_INFO_COUNT;
 +    kern_return_t result = task_info(mach_task_self(), TASK_THREAD_TIMES_INFO, reinterpret_cast<task_info_t>(&threadInfoData), &threadInfoCount);
 +    if (result != KERN_SUCCESS)
-+        return nullopt;
++        return std::nullopt;
 +
 +    int64_t userTime = timeValueToMicroseconds(threadInfoData.user_time);
 +    int64_t systemTime = timeValueToMicroseconds(threadInfoData.system_time);
@@ -45,7 +41,7 @@ index 27990893..fe279865 100644
 +    mach_msg_type_number_t taskInfoCount = TASK_BASIC_INFO_COUNT;
 +    result = task_info(mach_task_self(), TASK_BASIC_INFO, reinterpret_cast<task_info_t>(&taskInfoData), &taskInfoCount);
 +    if (result != KERN_SUCCESS)
-+        return nullopt;
++        return std::nullopt;
 +
 +    userTime += timeValueToMicroseconds(taskInfoData.user_time);
 +    systemTime += timeValueToMicroseconds(taskInfoData.system_time);

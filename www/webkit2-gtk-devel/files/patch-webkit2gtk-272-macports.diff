@@ -44,15 +44,6 @@ diff --git Source/WebKit/UIProcess/API/glib/WebKitProtocolHandler.cpp Source/Web
 index 57e8a557..45df4cf6 100644
 --- ./Source/WebKit/UIProcess/API/glib/WebKitProtocolHandler.cpp.orig	2019-11-22 04:57:54.000000000 -0800
 +++ ./Source/WebKit/UIProcess/API/glib/WebKitProtocolHandler.cpp	2019-11-27 05:52:39.000000000 -0800
-@@ -273,7 +273,7 @@
-         "  <td><div class=\"titlename\">Type</div></td>"
-         "  <td>%s</td>"
-         " </tbody></tr>",
--        PlatformDisplay::sharedDisplay().type() == PlatformDisplay::Type::Wayland ? "Wayland" : "X11");
-+        "X11");
- #endif
- 
-     auto rect = IntRect(screenRect(nullptr));
 @@ -333,9 +333,10 @@
          " </tbody></tr>",
          webGLEnabled(request) ? "Yes" : "No");

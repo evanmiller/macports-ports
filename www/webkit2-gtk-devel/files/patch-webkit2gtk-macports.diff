@@ -17,18 +17,6 @@ index c4ac7c9a..cf2fc2d6 100644
 +list(APPEND jsc_PRIVATE_INCLUDE_DIRECTORIES
 +	${WTF_DIR}
 +)
-diff --git Source/WTF/CMakeLists.txt Source/WTF/CMakeLists.txt
-index 7c615c55..dd221b1a 100644
---- Source/WTF/CMakeLists.txt
-+++ Source/WTF/CMakeLists.txt
-@@ -6,6 +6,6 @@ add_subdirectory(wtf)
- 
- # Apple builds have the ICU headers checked into ${WTF_DIR}/icu
- # Copy them into ${ICU_INCLUDE_DIRS} so the build behaves like find_package was used
--if (APPLE)
-+if (DISABLEAPPLE)
-     file(COPY ${WTF_DIR}/icu/unicode DESTINATION ${ICU_INCLUDE_DIRS})
- endif ()
 diff --git Source/WebCore/CMakeLists.txt Source/WebCore/CMakeLists.txt
 index a5b62f40..440ef671 100644
 --- Source/WebCore/CMakeLists.txt
@@ -169,18 +157,6 @@ index 00000000..cf113819
 +#endif // !USE(APPLE_INTERNAL_SDK)
 --- Source/WebCore/platform/graphics/gstreamer/MediaPlayerPrivateGStreamer.cpp.orig	2019-11-26 03:02:20.000000000 -0800
 +++ Source/WebCore/platform/graphics/gstreamer/MediaPlayerPrivateGStreamer.cpp	2019-11-26 14:56:04.000000000 -0800
-@@ -153,9 +153,9 @@
- 
- // gstglapi.h may include eglplatform.h and it includes X.h, which
- // defines None, breaking MediaPlayer::None enum
--#if PLATFORM(X11) && GST_GL_HAVE_PLATFORM_EGL
-+#if PLATFORM(X11)
- #undef None
--#endif // PLATFORM(X11) && GST_GL_HAVE_PLATFORM_EGL
-+#endif // PLATFORM(X11)
- #include "VideoTextureCopierGStreamer.h"
- #endif // USE(GSTREAMER_GL)
- 
 @@ -795,7 +795,7 @@
      if (GST_STATE(m_pipeline.get()) < GST_STATE_PAUSED)
          return MediaTime::invalidTime();

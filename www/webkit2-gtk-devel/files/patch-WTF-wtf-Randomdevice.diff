@@ -17,9 +17,9 @@ index 89165f03..99251674 100644
  
 -#if OS(DARWIN)
 +#if (0)
- #include <CommonCrypto/CommonCryptoError.h>
  #include <CommonCrypto/CommonRandom.h>
  #endif
+ 
 @@ -52,7 +52,7 @@
  
  namespace WTF {
