@@ -31,6 +31,15 @@ checksums       rmd160  ace5262a32b0219c0dd173d2e6f254dd0b619ddb \
 
 depends_lib     port:libgpg-error
 
+platform darwin 8 {
+    # Tiger lacks spawn.h, so remove USE_POSIX_SPAWN_FOR_TESTS and
+    # then regenerate the configure file
+    patchfiles-append patch-libgcrypt-posix_spawn.diff
+
+    use_autoconf    yes
+    autoconf.cmd    ./autogen.sh
+}
+
 configure.args  --disable-asm
 
 # Build fix for compilers that default to c99 (clang)
