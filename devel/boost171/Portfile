@@ -103,6 +103,17 @@ patchfiles-append patch-clang_version.diff
 # both alone as well as +universal
 patchfiles-append patch-add-support-for-arm64.diff
 
+# Fix a couple of PowerPC assembler errors in the context module
+patchfiles-append patch-ppc32-asm.diff
+
+# Tiger's PowerPC assembler doesn't like # comments
+post-patch {
+    reinplace "s| # | ; |g" \
+        ${worksrcpath}/libs/context/src/asm/jump_ppc32_sysv_macho_gas.S \
+        ${worksrcpath}/libs/context/src/asm/make_ppc32_sysv_macho_gas.S \
+        ${worksrcpath}/libs/context/src/asm/ontop_ppc32_sysv_macho_gas.S
+}
+
 proc write_jam s {
     global worksrcpath
     set config [open ${worksrcpath}/user-config.jam a]
@@ -135,12 +146,6 @@ configure.args      --without-libraries=python \
 # boost build scripts default to clang on darwin
 if {[string match *gcc* ${configure.compiler}]} {
     configure.args-append --with-toolset=gcc
-}
-
-# makecontext/swapcontext introduced in 10.6
-if {${os.platform} eq "darwin" && ${os.major} < 10} {
-    configure.args-append   --without-libraries=context \
-                            --without-libraries=coroutine
 }
 
 configure.universal_args
@@ -327,7 +332,7 @@ subport ${name}-numpy {
 
 if {$subport eq $name} {
 
-    revision 3
+    revision 4
 
     patchfiles-append patch-disable-numpy-extension.diff
 
