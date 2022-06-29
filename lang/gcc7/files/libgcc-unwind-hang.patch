@@ -1,0 +1,183 @@
+From 6cfcaa4609ee3e3557ddf50fda00fdf9a5fc07e4 Mon Sep 17 00:00:00 2001
+From: Iain Sandoe <iain@sandoe.co.uk>
+Date: Mon, 18 Jan 2021 20:09:10 +0000
+Subject: [PATCH] dwarf2unwind : Force the CFA after remember/restore pairs
+ [44107/48097].
+
+This address one of the more long-standing and serious regressions
+for Darwin.  GCC emits unwind code by default on the assumption that
+the unwinder will be (of have the same capability) as the one in the
+current libgcc_s.  For Darwin platforms, this is not the case - some
+of them are based on the libgcc_s from GCC-4.2.1 and some are using
+the unwinder provided by libunwind (part of the LLVM project). The
+latter implementation has gradually adopted a section that deals with
+GNU unwind.
+
+The most serious problem for some of the platform versions is in
+handling DW_CFA_remember/restore_state pairs.  The DWARF description
+talks about these in terms of saving/restoring register rows; this is
+what GCC originally did (and is what the unwinders do for the Darwin
+versions based on libgcc_s).
+
+However, in r118068, this was changed so that not only the registers
+but also the current frame address expression were saved.  The unwind
+code assumes that the unwinder will do this; some of Darwin's unwinders
+do not, leading to lockups etc.  To date, the only solution has been
+to replace the system libgcc_s with a newer one which is not a viable
+solution for many end-users (since that means overwritting the one
+provided with the system installation).
+
+The fix here provides a target hook that allows the target to specify
+that the CFA should be reinstated after a DW_CFA_restore.  This fixes
+the issue (and also the closed WONTFIX of 44107).
+
+(As a matter of record, it also fixes reported Java issues if
+ backported to GCC-5).
+
+gcc/ChangeLog:
+
+	PR target/44107
+	PR target/48097
+	* config/darwin-protos.h (darwin_should_restore_cfa_state): New.
+	* config/darwin.c (darwin_should_restore_cfa_state): New.
+	* config/darwin.h (TARGET_ASM_SHOULD_RESTORE_CFA_STATE): New.
+	* doc/tm.texi: Regenerated.
+	* doc/tm.texi.in: Document TARGET_ASM_SHOULD_RESTORE_CFA_STATE.
+	* dwarf2cfi.c (connect_traces): If the target requests, restore
+	the CFA expression after a DW_CFA_restore.
+	* target.def (TARGET_ASM_SHOULD_RESTORE_CFA_STATE): New hook.
+
+(cherry picked from commit 491d5b3cf8216f9285a67aa213b9a66b0035137b)
+---
+ gcc/config/darwin-protos.h |  1 +
+ gcc/config/darwin.c        | 11 +++++++++++
+ gcc/config/darwin.h        |  5 +++++
+ gcc/doc/tm.texi            |  4 ++++
+ gcc/doc/tm.texi.in         |  2 ++
+ gcc/dwarf2cfi.c            |  6 ++++++
+ gcc/target.def             | 14 ++++++++++++++
+ 7 files changed, 43 insertions(+)
+
+diff --git a/gcc/config/darwin-protos.h b/gcc/config/darwin-protos.h
+index afeca81f807..5f0ddfb2c0b 100644
+--- gcc/config/darwin-protos.h
++++ gcc/config/darwin-protos.h
+@@ -66,6 +66,7 @@ extern void darwin_non_lazy_pcrel (FILE *, rtx);
+ 
+ extern void darwin_emit_unwind_label (FILE *, tree, int, int);
+ extern void darwin_emit_except_table_label (FILE *);
++extern bool darwin_should_restore_cfa_state (void);
+ 
+ extern void darwin_pragma_ignore (struct cpp_reader *);
+ extern void darwin_pragma_options (struct cpp_reader *);
+diff --git a/gcc/config/darwin.c b/gcc/config/darwin.c
+index ae092c5d36f..853c349209d 100644
+--- gcc/config/darwin.c
++++ gcc/config/darwin.c
+@@ -2231,6 +2231,17 @@ darwin_emit_except_table_label (FILE *file)
+ 			       except_table_label_num++);
+   ASM_OUTPUT_LABEL (file, section_start_label);
+ }
++
++/* The unwinders in earlier Darwin versions are based on an old version
++   of libgcc_s and need current frame address stateto be reset after a
++   DW_CFA_restore_state recovers the register values.  */
++
++bool
++darwin_should_restore_cfa_state (void)
++{
++  return generating_for_darwin_version <= 10;
++}
++
+ /* Generate a PC-relative reference to a Mach-O non-lazy-symbol.  */
+ 
+ void
+diff --git a/gcc/config/darwin.h b/gcc/config/darwin.h
+index 113fe5de4fa..f017353778b 100644
+--- gcc/config/darwin.h
++++ gcc/config/darwin.h
+@@ -581,6 +581,11 @@ extern GTY(()) int darwin_ms_struct;
+ /* Emit a label to separate the exception table.  */
+ #define TARGET_ASM_EMIT_EXCEPT_TABLE_LABEL darwin_emit_except_table_label
+ 
++/* Some of Darwin's unwinders need current frame address state to be reset
++   after a DW_CFA_restore_state recovers the register values.  */
++#undef TARGET_ASM_SHOULD_RESTORE_CFA_STATE
++#define TARGET_ASM_SHOULD_RESTORE_CFA_STATE darwin_should_restore_cfa_state
++
+ /* Our profiling scheme doesn't LP labels and counter words.  */
+ 
+ #define NO_PROFILE_COUNTERS	1
+diff --git a/gcc/doc/tm.texi b/gcc/doc/tm.texi
+index 7f5c370d97a..842ee2be790 100644
+--- gcc/doc/tm.texi
++++ gcc/doc/tm.texi
+@@ -9495,6 +9495,10 @@ returns @code{UI_TARGET}.
+ True if the @code{TARGET_ASM_UNWIND_EMIT} hook should be called before the assembly for @var{insn} has been emitted, false if the hook should be called afterward.
+ @end deftypevr
+ 
++@deftypefn {Target Hook} bool TARGET_ASM_SHOULD_RESTORE_CFA_STATE (void)
++For DWARF-based unwind frames, two CFI instructions provide for save and restore of register state.  GCC maintains the current frame address (CFA) separately from the register bank but the unwinder in libgcc preserves this state along with the registers (and this is expected by the code that writes the unwind frames).  This hook allows the target to specify that the CFA data is not saved/restored along with the registers by the target unwinder so that suitable additional instructions should be emitted to restore it.
++@end deftypefn
++
+ @node Exception Region Output
+ @subsection Assembler Commands for Exception Regions
+ 
+diff --git a/gcc/doc/tm.texi.in b/gcc/doc/tm.texi.in
+index 44a15dda240..397c7dc9047 100644
+--- gcc/doc/tm.texi.in
++++ gcc/doc/tm.texi.in
+@@ -6447,6 +6447,8 @@ the jump-table.
+ 
+ @hook TARGET_ASM_UNWIND_EMIT_BEFORE_INSN
+ 
++@hook TARGET_ASM_SHOULD_RESTORE_CFA_STATE
++
+ @node Exception Region Output
+ @subsection Assembler Commands for Exception Regions
+ 
+diff --git a/gcc/dwarf2cfi.c b/gcc/dwarf2cfi.c
+index 1aaa0c845f6..a7d8dcdc5da 100644
+--- gcc/dwarf2cfi.c
++++ gcc/dwarf2cfi.c
+@@ -2863,6 +2863,12 @@ connect_traces (void)
+ 	      cfi->dw_cfi_opc = DW_CFA_restore_state;
+ 	      add_cfi (cfi);
+ 
++	      /* If the target unwinder does not save the CFA as part of the
++		 register state, we need to restore it separately.  */
++	      if (targetm.asm_out.should_restore_cfa_state ()
++		  && (cfi = def_cfa_0 (&old_row->cfa, &ti->beg_row->cfa)))
++		add_cfi (cfi);
++
+ 	      old_row = prev_ti->beg_row;
+ 	    }
+ 	  /* Otherwise, we'll simply change state from the previous end.  */
+diff --git a/gcc/target.def b/gcc/target.def
+index 66cee075018..a9f1f195e7a 100644
+--- gcc/target.def
++++ gcc/target.def
+@@ -201,6 +201,20 @@ DEFHOOKPOD
+  be called afterward.",
+  bool, true)
+ 
++/* Return true if the target needs extra instructions to restore the current
++   frame address after a DW_CFA_restore_state opcode.  */
++DEFHOOK
++(should_restore_cfa_state,
++ "For DWARF-based unwind frames, two CFI instructions provide for save and\
++ restore of register state.  GCC maintains the current frame address (CFA)\
++ separately from the register bank but the unwinder in libgcc preserves this\
++ state along with the registers (and this is expected by the code that writes\
++ the unwind frames).  This hook allows the target to specify that the CFA data\
++ is not saved/restored along with the registers by the target unwinder so that\
++ suitable additional instructions should be emitted to restore it.",
++ bool, (void),
++ hook_bool_void_false)
++
+ /* Generate an internal label.
+    For now this is just a wrapper for ASM_GENERATE_INTERNAL_LABEL.  */
+ DEFHOOK_UNDOC
+-- 
+2.31.1
+
