@@ -24,7 +24,9 @@ depends_lib     port:libsdl2
 
 configure.args  --disable-sdltest
 
-compiler.blacklist *gcc* { clang < 211 }
+# requires immintrin.h
+# https://trac.macports.org/ticket/57973
+compiler.blacklist *gcc-3.* *gcc-4.* { clang < 211 }
 
 post-destroot {
     xinstall -d ${destroot}${prefix}/share/doc/${name}
