@@ -2,10 +2,11 @@
 
 PortSystem      1.0
 PortGroup       muniversal 1.0
+PortGroup       github 1.0
 
+github.setup    apple-oss-distributions gdb 1824 gdb-
 name            gdb-apple
-version         1824
-revision        1
+revision        2
 categories      devel
 license         GPL-2+
 maintainers     {jeremyhu @jeremyhu} openmaintainer
@@ -26,15 +27,11 @@ Pascal (and many other languages). Those programs might be executing on \
 the same machine as GDB (native) or on another machine (remote). GDB \
 can run on most popular UNIX and Microsoft Windows variants.
 
-homepage        http://opensource.apple.com/source/gdb
 platforms       darwin
 supported_archs x86_64 i386 ppc
 
 # xm.h can be created out of order
 use_parallel_build no
-
-distname        gdb-${version}
-master_sites    http://opensource.apple.com/tarballs/gdb
 
 checksums       rmd160  90290c3950dd06c1691a477b9ee302c00b681ed1 \
                 sha256  d25b056a826015e1e0ea338b9b8f03e40dce3ff4696faf95df259ae1a42698da \
@@ -58,6 +55,12 @@ if {${os.platform} eq "darwin" && ${os.major} < 10} {
         patchfiles-append \
                 patch-macosx-nat-info.c.diff \
                 patch-include-libiberty.h.diff
+
+        post-patch {
+            # https://trac.macports.org/ticket/67370
+            reinplace "s/.__dr/.dr/" \
+                ${worksrcpath}/gdb/macosx/i386-macosx-nat-exec.c
+        }
     }
 }
 
@@ -74,6 +77,7 @@ post-patch {
     reinplace "s|\$(SDKROOT)/usr/bin/mig|/usr/bin/mig|" \
         ${worksrcpath}/gdb/config/i386/macosx.mh \
         ${worksrcpath}/gdb/config/powerpc/macosx.mh
+
 }
 
 configure.args \
