@@ -142,6 +142,8 @@ if {${subport} eq ${name} || ${subport} eq "${name}-lx"} {
 
     platform darwin 8 {
         patchfiles-append patch-common-putil.cpp.diff
+        patchfiles-append patch-config-mh-darwin.diff
+        configure.args-replace --enable-rpath --disable-rpath
     }
 
     platform freebsd {
